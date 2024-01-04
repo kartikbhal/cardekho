@@ -1,67 +1,39 @@
-const {createHmac, randomBytes} = require("crypto");
-const {Schema, model} = require('mongoose')
+const { Router } = require("express");
+const {model}= require("mongoose");
+const User=require('../models/user');
 
-const userSchema=new Schema({
-    fullNname: {
-        type: String,
-        required: true,
-    },
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-    },
-    salt: {
-        type: String,
-        
+const router= Router();
 
-    },
-    password: {
-        type: String,
-        require: true,
-    },
-    
-}, 
-{timestams: true}
-);
-
-userSchema.pre("save", function (next) {
-    const user=this;
-
-    if(!user.isModified("password")) return;
-
-    const salt=randomBytes(16).toString();
-    const hashedPassword=createHmac("sha256, salt")
-    .update(user.password)
-    .digest("hex");
-
-    this.salt=salt;
-    this.password=hashedPassword;
-
-    next();
+router.get('/signin', (req, res) =>{
+    return res.render("signin");
 });
 
-userSchema.static('matchPassword', async function(email,password){
-    const user= await this.findOne({email});
-    if (!user) throw new Error('User not found');
-    console.log(user);
 
-    const salt = user.salt;
-    const hashedPassword=user.password;
+router.get('/signup', (req, res) =>{
+    return res.render("signup");
+});
 
-    const userProvidedHash=createHmac("sha256" , salt)
-    .update(userpassword)
-    .digest("hex");
+router.post('/signin', async(req, res) =>{
+    const{ email, password,}=req.body;
+    console.log(email, password);
+    const user= await User.matchPassword(email, password);
+    
+    console.log('User, user');
+    return res.redirect("/");
 
-    if(hashedPassword !== userProvidedHash)  throw new Error('incorrect Password')
-
-    return user;
-
-})
-
-const User=model('user' , userSchema);
-
-module.exports=User;
+});
 
 
+router.post('/signup', async (req, res) =>{
+    const{ fullName, email, password,}=req.body;
+    await User.create({
+        fullName,
+        email,
+        password,
+    
+    });
 
+    return res.redirect("/");
+});
+
+module.exports =router;
